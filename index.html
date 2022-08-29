@@ -1,0 +1,239 @@
+<script type="text/javascript" src="./timingsrc-v2.js"></script>
+<script type="text/javascript" src="./mediasync.js"></script>
+
+<style>
+audio {
+  width: 80vw;
+}
+#seek {
+  width: 70vw;
+}
+#btn-hidden {
+  visibility: hidden;
+}
+</style>
+
+<table>
+  <tr>
+    <td></td>
+    <td>
+      <audio id="p" preload="auto" src="piano.aac"></audio>
+      <button id="pp">Play ▶️</button>
+      <span id="ts">0:00</span> / <span id="dur">-:--</span>
+      <input type="range" id="seek" min="0" max="0" step="0.01" value="0">
+    </td>
+  </tr>
+  <tr>
+    <td>----</td>
+    <td>音量 Volume:</td>
+  </tr>
+  <tr>
+    <td>女高音 Soprano</td>
+    <td>
+      <audio id="s" preload="auto" src="soprano.aac"></audio>
+      <input type="range" id="ss" min="1" max="10" value="8">
+    </td>
+  </tr>
+  <tr>
+    <td>女低音 Alto</td>
+    <td>
+      <audio id="a" preload="auto" src="alto.aac"></audio>
+      <input type="range" id="aa" min="1" max="10" value="8">
+    </td>
+  </tr>
+  <tr>
+    <td>男高音 Tenor</td>
+    <td>
+      <audio id="t" preload="auto" src="tenor.aac"></audio>
+      <input type="range" id="tt" min="1" max="10" value="8">
+    </td>
+  </tr>
+  <tr>
+    <td>男低音 Bass</td>
+    <td>
+      <audio id="b" preload="auto" src="bass.aac"></audio>
+      <input type="range" id="bb" min="1" max="10" value="8">
+    </td>
+  </tr>
+  <tr>
+    <td>----</td>
+    <td>Presets:</td>
+  </tr>
+  <tr>
+    <td>Mix</td>
+    <td>
+      <button id="btn-def">All</button>
+      <button id="btn-s">Soprano</button>
+      <button id="btn-a">Alto</button>
+      <button id="btn-t">Tenor</button>
+      <button id="btn-b">Bass</button>
+    </td>
+  </tr>
+  <tr>
+    <td>Solo</td>
+    <td>
+      <button id="btn-hidden">All</button>
+      <button id="btn-ss">Soprano</button>
+      <button id="btn-aa">Alto</button>
+      <button id="btn-tt">Tenor</button>
+      <button id="btn-bb">Bass</button>
+    </td>
+  </tr>
+</table>
+
+<script>
+  // audio elements
+  var p = document.getElementById('p');
+  var s = document.getElementById('s');
+  var a = document.getElementById('a');
+  var t = document.getElementById('t');
+  var b = document.getElementById('b');
+  [p, s, a, t, b].forEach(_ => _.load());
+
+  // set up timing objects
+  var _t; // timing object
+  var pp = document.getElementById('pp');
+  var seek = document.getElementById('seek');
+  var ts = document.getElementById('ts');
+  var dur = document.getElementById('dur');
+
+  function to_time(dec) {
+    const m = Math.floor(dec / 60);
+    const s = Math.floor(dec - (m*60))
+    if (s < 10) {
+      return m + ':0' + s;
+    } else {
+      return m + ':' + s;
+    }
+  }
+
+  p.onloadedmetadata = () => {
+    if (!_t) {
+      _t = new TIMINGSRC.TimingObject({ range: [0, p.duration] });
+
+      seek.max = p.duration;
+      dur.innerText = to_time(p.duration);
+
+      seek.oninput = (e) => {
+        ts.innerText = to_time(e.target.value);
+      };
+
+      seek.onchange = (e) => {
+        _t.update({ position: parseFloat(e.target.value) });
+      };
+
+      _t.on('timeupdate', () => {
+        const pos = _t.query().position;
+        ts.innerText = to_time(pos);
+        seek.value = pos;
+      });
+
+      pp.onclick = () => {
+        if (p.paused) { // start play
+          _t.update({ velocity: 1 });
+          pp.innerText = 'Pause ⏸';
+        } else { // pause play
+          _t.update({ velocity: 0 });
+          pp.innerText = 'Play ▶️';
+        }
+      };
+
+      MCorp.mediaSync(p, _t);
+      MCorp.mediaSync(s, _t);
+      MCorp.mediaSync(a, _t);
+      MCorp.mediaSync(t, _t);
+      MCorp.mediaSync(b, _t);
+    }
+  };
+
+  // volume controls
+  var ss = document.getElementById('ss');
+  var aa = document.getElementById('aa');
+  var tt = document.getElementById('tt');
+  var bb = document.getElementById('bb');
+
+  ss.oninput = (e) => {
+    const v = parseInt(e.target.value, 10) / 10 * 0.7;
+    s.volume = v;
+  };
+  aa.oninput = (e) => {
+    const v = parseInt(e.target.value, 10) / 10 * 0.7;
+    a.volume = v;
+  };
+  tt.oninput = (e) => {
+    const v = parseInt(e.target.value, 10) / 10 * 0.7;
+    t.volume = v;
+  };
+  bb.oninput = (e) => {
+    const v = parseInt(e.target.value, 10) / 10 * 0.7;
+    b.volume = v;
+  };
+
+  document.getElementById('btn-def').onclick = () => {
+    ss.value = 8;
+    aa.value = 8;
+    tt.value = 8;
+    bb.value = 8;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+
+  document.getElementById('btn-s').onclick = () => {
+    ss.value = 10;
+    aa.value = 3;
+    tt.value = 3;
+    bb.value = 3;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+  document.getElementById('btn-a').onclick = () => {
+    ss.value = 3;
+    aa.value = 10;
+    tt.value = 3;
+    bb.value = 3;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+  document.getElementById('btn-t').onclick = () => {
+    ss.value = 3;
+    aa.value = 3;
+    tt.value = 10;
+    bb.value = 3;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+  document.getElementById('btn-b').onclick = () => {
+    ss.value = 3;
+    aa.value = 3;
+    tt.value = 3;
+    bb.value = 10;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+
+  document.getElementById('btn-ss').onclick = () => {
+    ss.value = 10;
+    aa.value = 1;
+    tt.value = 1;
+    bb.value = 1;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+  document.getElementById('btn-aa').onclick = () => {
+    ss.value = 1;
+    aa.value = 10;
+    tt.value = 1;
+    bb.value = 1;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+  document.getElementById('btn-tt').onclick = () => {
+    ss.value = 1;
+    aa.value = 1;
+    tt.value = 10;
+    bb.value = 1;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+  document.getElementById('btn-bb').onclick = () => {
+    ss.value = 1;
+    aa.value = 1;
+    tt.value = 1;
+    bb.value = 10;
+    [ss, aa, tt, bb].forEach(i => { i.dispatchEvent(new Event('input')); });
+  };
+
+  document.getElementById('btn-def').click();
+</script>
